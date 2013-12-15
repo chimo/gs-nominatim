@@ -49,6 +49,7 @@ if (!defined('STATUSNET')) {
 class NominatimPlugin extends Plugin
 {
     const LOCATION_NS = 2;
+    const VERSION = '0.1';
 
     public $host     = 'open.mapquestapi.com/nominatim/v1'; // Defaults to mapquest since OSM has a 1 request/second rate limit
     public $credits  = '<p>Nominatim Search Courtesy of <a href="http://www.mapquest.com/">MapQuest</a></p>'; // TODO: TRANS
@@ -497,7 +498,7 @@ class NominatimPlugin extends Plugin
     function onPluginVersion(&$versions)
     {
         $versions[] = array('name' => 'Nominatim',
-                            'version' => STATUSNET_VERSION,
+                            'version' => self::VERSION,
                             'author' => 'Stephane Berube',
                             'homepage' => 'https://github.com/chimo/SN-Nominatim',
                             'rawdescription' =>
