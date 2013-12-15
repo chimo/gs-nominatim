@@ -173,8 +173,6 @@ class NominatimPlugin extends Plugin
             return false;
         }
 
-        $parts = array();
-
         $location = new Location();
 
         $location->location_id = (string)$geonames->result['osm_id'];
@@ -182,7 +180,8 @@ class NominatimPlugin extends Plugin
         $location->lat         = $this->canonical((string)$geonames->result->attributes()['lat']);
         $location->lon         = $this->canonical((string)$geonames->result->attributes()['lon']);
 
-        $location->names[$language] = implode(', ', array_reverse($parts));
+        $parts = $this->getAddressParts($geonames);
+        $location->names[$language] = implode(', ', $parts);
 
         $this->setCache(array('id' => (string)$geonames->result['osm_id']),
                         $location);
@@ -191,6 +190,23 @@ class NominatimPlugin extends Plugin
         // can resolve it
 
         return false;
+    }
+
+    function getAddressParts($geonames) {
+        $n = $geonames->addressparts;
+        $parts = array();
+
+        $parts[] = (string)$n->city;
+
+        if (!empty($n->state)) {
+            $parts[] = (string)$n->state;
+        }
+
+        if (!empty($n->country)) {
+            $parts[] = (string)$n->country;
+        }
+
+        return $parts;
     }
 
     /**
@@ -238,26 +254,14 @@ class NominatimPlugin extends Plugin
             return true;
         }
 
-        $n = $geonames->addressparts;
-        $parts = array();
-
         $location = new Location();
-
-        $parts[] = (string)$n->city;
-
-        if (!empty($n->state)) {
-            $parts[] = (string)$n->state;
-        }
-
-        if (!empty($n->country)) {
-            $parts[] = (string)$n->country;
-        }
 
         $location->location_id = (string)$geonames->result['osm_id'];
         $location->location_ns = self::LOCATION_NS;
         $location->lat         = $this->canonical((string)$geonames->result->attributes()['lat']);
         $location->lon         = $this->canonical((string)$geonames->result->attributes()['lon']);
 
+        $parts = $this->getAddressParts($geonames);
         $location->names[$language] = implode(', ', $parts);
 
         $this->setCache(array('lat' => $lat,
