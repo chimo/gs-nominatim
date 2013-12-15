@@ -196,7 +196,13 @@ class NominatimPlugin extends Plugin
         $n = $geonames->addressparts;
         $parts = array();
 
-        $parts[] = (string)$n->city;
+        if (!empty($n->town)) {
+            $parts[] = (string)$n->town;
+        }
+
+        if (!empty($n->city)) {
+            $parts[] = (string)$n->city;
+        }
 
         if (!empty($n->state)) {
             $parts[] = (string)$n->state;
