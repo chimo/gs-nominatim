@@ -50,9 +50,7 @@ class NominatimPlugin extends Plugin
 {
     const LOCATION_NS = 2;
 
-//    public $host     = 'ws.geonames.org';
-//    public $host     = 'nominatim.openstreetmap.org';
-    public $host     = 'open.mapquestapi.com/nominatim/v1';
+    public $host     = 'open.mapquestapi.com/nominatim/v1'; // Defaults to mapquest since OSM has a 1 request/second rate limit
     public $username = null;
     public $token    = null;
     public $expiry   = 7776000; // 90-day expiry
@@ -62,6 +60,11 @@ class NominatimPlugin extends Plugin
                                 // to share lookups between local instances.
 
     protected $lastTimeout = null; // timestamp of last web service timeout
+
+    function initialize() {
+        $host = common_config('nominatim', 'host') ?: $this->host; // PHP 5.3
+        $credit = common_config('nominatim', 'credits') ?: $this->credits; // PHP 5.3
+    }
 
     // TODO
     /**
