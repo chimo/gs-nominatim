@@ -389,7 +389,7 @@ class NominatimPlugin extends Plugin
             return true;
         }
 
-        $url = 'http://www.openstreetmap.org/?mlat=' . $location->lat . '&mlon=' . $location->lon;
+        $url = 'http://linkedgeodata.org/data/triplify/node' . $location->location_id . '?output=xml';
 
         // it's been filled, so don't process further.
         return false;
