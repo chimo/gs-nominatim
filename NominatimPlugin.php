@@ -179,7 +179,7 @@ class NominatimPlugin extends Plugin
         $location->lat         = $this->canonical((string)$geonames->result->attributes()['lat']);
         $location->lon         = $this->canonical((string)$geonames->result->attributes()['lon']);
 
-        $parts = $this->getAddressParts($geonames);
+        $parts = $this->getAddressParts($geonames->addressparts);
         $location->names[$language] = implode(', ', $parts);
 
         $this->setCache(array('id' => (string)$geonames->result['osm_id']),
@@ -191,8 +191,7 @@ class NominatimPlugin extends Plugin
         return false;
     }
 
-    function getAddressParts($geonames) {
-        $n = $geonames->addressparts;
+    function getAddressParts($n) {
         $parts = array();
 
         if (!empty($n->town)) {
@@ -266,7 +265,7 @@ class NominatimPlugin extends Plugin
         $location->lat         = $this->canonical((string)$geonames->result->attributes()['lat']);
         $location->lon         = $this->canonical((string)$geonames->result->attributes()['lon']);
 
-        $parts = $this->getAddressParts($geonames);
+        $parts = $this->getAddressParts($geonames->addressparts);
         $location->names[$language] = implode(', ', $parts);
 
         $this->setCache(array('lat' => $lat,
