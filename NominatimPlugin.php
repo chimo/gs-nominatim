@@ -82,7 +82,6 @@ class NominatimPlugin extends Plugin
         $action->elementEnd('div');
     }
 
-    // TODO
     /**
      * convert a name into a Location object
      *
@@ -92,7 +91,7 @@ class NominatimPlugin extends Plugin
      *
      * @return boolean whether to continue (results in $location)
      */
-/*    function onLocationFromName($name, $language, &$location)
+    function onLocationFromName($name, $language, &$location)
     {
         $loc = $this->getCache(array('name' => $name,
                                      'language' => $language));
@@ -104,10 +103,10 @@ class NominatimPlugin extends Plugin
 
         try {
             $geonames = $this->getGeonames('search',
-                                           array('maxRows' => 1,
+                                           array('limit' => 1,
                                                  'q' => $name,
                                                  'accept-language' => $language,
-                                                 'type' => 'xml'));
+                                                 'format' => 'xml'));
         } catch (Exception $e) {
             $this->log(LOG_WARNING, "Error for $name: " . $e->getMessage());
             return true;
@@ -121,15 +120,15 @@ class NominatimPlugin extends Plugin
             return true;
         }
 
-        $n = $geonames[0];
+        $parts = $this->getAddressParts($geonames->place);
 
         $location = new Location();
 
-        $location->lat              = $this->canonical($n->lat);
-        $location->lon              = $this->canonical($n->lng);
-        $location->names[$language] = (string)$n->name;
-        $location->location_id      = (string)$n->geonameId;
-        $location->location_ns      = self::LOCATION_NS;
+        $location->location_id = (string)$geonames->place['osm_id'];
+        $location->location_ns = self::LOCATION_NS;
+        $location->lat         = $this->canonical((string)$geonames->place->attributes()['lat']);
+        $location->lon         = $this->canonical((string)$geonames->place->attributes()['lon']);
+        $location->names[$language] = (string)$geonames->place['display_name'];
 
         $this->setCache(array('name' => $name,
                               'language' => $language),
@@ -137,7 +136,7 @@ class NominatimPlugin extends Plugin
 
         // handled, don't continue processing!
         return false;
-    } */
+    }
 
     // TODO
     /**
