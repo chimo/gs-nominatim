@@ -5,9 +5,9 @@ StatusNet plugin using [Nominatim](http://wiki.openstreetmap.org/wiki/Nominatim)
 
 ## Installation
 
-Make sure the files are in a folder called `Nominatim`
+Make sure the files are in a folder called `Nominatim`  
 Put the folder in your `/plugins/` directory  
-Tell `/config.php` to use it with: `addPlugin('Nominatim');`  
+Tell `/config.php` to use it with: `addPlugin('Nominatim');`
 
 ## Configuration
 
