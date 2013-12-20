@@ -106,7 +106,7 @@ class NominatimPlugin extends Plugin
             $geonames = $this->getGeonames('search',
                                            array('maxRows' => 1,
                                                  'q' => $name,
-                                                 'lang' => $language,
+                                                 'accept-language' => $language,
                                                  'type' => 'xml'));
         } catch (Exception $e) {
             $this->log(LOG_WARNING, "Error for $name: " . $e->getMessage());
@@ -246,7 +246,7 @@ class NominatimPlugin extends Plugin
           $geonames = $this->getGeonames('reverse',
                                          array('lat' => $lat,
                                                'lon' => $lon,
-                                               'lang' => $language));
+                                               'accept-language' => $language));
         } catch (Exception $e) {
             $this->log(LOG_WARNING, "Error for coords $lat, $lon: " . $e->getMessage());
             return true;
@@ -311,7 +311,7 @@ class NominatimPlugin extends Plugin
         try {
             $geonames = $this->getGeonames('hierarchy',
                                            array('geonameId' => $id,
-                                                 'lang' => $language));
+                                                 'accept-language' => $language));
         } catch (Exception $e) {
             $this->log(LOG_WARNING, "Error for ID $id: " . $e->getMessage());
             return false;
