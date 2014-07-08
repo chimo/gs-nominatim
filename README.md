@@ -1,7 +1,7 @@
-SN-Nominatim
+GS-Nominatim
 ============
 
-StatusNet plugin using [Nominatim](http://wiki.openstreetmap.org/wiki/Nominatim) service to get human-readable names for locations based on user-provided lat/long pairs.
+GNU social plugin using [Nominatim](http://wiki.openstreetmap.org/wiki/Nominatim) service to get human-readable names for locations based on user-provided lat/long pairs.
 
 ## Installation
 
