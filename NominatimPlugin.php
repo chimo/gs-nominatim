@@ -66,7 +66,7 @@ class NominatimPlugin extends Plugin
                                                  'accept-language' => $language,
                                                  'format' => 'xml'));
         } catch (Exception $e) {
-            $this->log(LOG_WARNING, "Error for $name: " . $e->getMessage());
+            // $this->log(LOG_WARNING, "Error for $name: " . $e->getMessage());
             return true;
         }
 
@@ -126,7 +126,7 @@ class NominatimPlugin extends Plugin
                                            array('osm_type' => 'N',
                                                  'osm_id' => $id));
         } catch (Exception $e) {
-            $this->log(LOG_WARNING, "Error for ID $id: " . $e->getMessage());
+            // $this->log(LOG_WARNING, "Error for ID $id: " . $e->getMessage());
             return false;
         }
 
@@ -204,7 +204,7 @@ class NominatimPlugin extends Plugin
                                                'lon' => $lon,
                                                'accept-language' => $language));
         } catch (Exception $e) {
-            $this->log(LOG_WARNING, "Error for coords $lat, $lon: " . $e->getMessage());
+            // $this->log(LOG_WARNING, "Error for coords $lat, $lon: " . $e->getMessage());
             return true;
         }
 
