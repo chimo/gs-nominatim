@@ -1,4 +1,6 @@
 <?php
+
+if (!defined('GNUSOCIAL')) {
     exit(1);
 }
 
@@ -416,7 +418,7 @@ class NominatimPlugin extends Plugin
         $client = HTTPClient::start();
         $client->setConfig('connect_timeout', $this->timeout);
         $client->setConfig('timeout', $this->timeout);
-        $client->setHeader('User-Agent', 'StatusNet Nominatim Plugin - https://github.com/chimo/SN-Nominatim');
+        $client->setHeader('User-Agent', 'GNU social Nominatim Plugin - https://github.com/chimo/gs-nominatim');
 
         try {
             $result = $client->get($this->nomUrl($method, $params));
