@@ -6,36 +6,45 @@ if (!defined('GNUSOCIAL')) {
 
 class NominatimPlugin extends Plugin
 {
+    // namespace
     const LOCATION_NS = 2;
-    const VERSION = '0.1';
 
-    public $host     = 'open.mapquestapi.com/nominatim/v1'; // Defaults to mapquest since OSM has a 1 request/second rate limit
-    public $credits  = '<p>Nominatim Search Courtesy of <a href="http://www.mapquest.com/">MapQuest</a></p>'; // TODO: TRANS
-    public $username = null;
-    public $token    = null;
-    public $expiry   = 7776000; // 90-day expiry
-    public $timeout  = 2;       // Web service timeout in seconds.
-    public $timeoutWindow = 60; // Further lookups in this process will be disabled for N seconds after a timeout.
-    public $cachePrefix = null; // Optional shared memcache prefix override
-                                // to share lookups between local instances.
+    // plugin version
+    const VERSION = '0.2.0';
 
-    protected $lastTimeout = null; // timestamp of last web service timeout
+    // how long do we keep the information in the cache (in seconds)
+    public $expiry   = 60 * 60 * 24 * 90; // 90-days
 
-    function initialize() {
-        $host = common_config('nominatim', 'host') ?: $this->host; // PHP 5.3
-        $credit = common_config('nominatim', 'credits') ?: $this->credits; // PHP 5.3
+    // how long do we wait for an answer from the remote service (in seconds)
+    public $timeout  = 2;
+
+    // how long do we back off after the service timed out (in seconds)
+    public $timeoutWindow = 60;
+
+    // when was the last time the service timed out (timestamp)
+    protected $lastTimeout = null;
+
+    /**
+     * Get values from config.php or fallback to defaults if they don't exist
+     */
+    function initialize()
+    {
+        $this->host = common_config('nominatim', 'host') ?: 'open.mapquestapi.com/nominatim/v1';
+        $this->credits = common_config('nominatim', 'credits') ?: '<p>Nominatim Search Courtesy of <a href="http://www.mapquest.com/">MapQuest</a></p>';
     }
 
-    function onEndShowContentLicense($action) {
+    /**
+     * Add OSM and Nominatim license information to the instance's
+     * "license" section (usually in the footer)
+     */
+    function onEndShowContentLicense($action)
+    {
         $action->elementStart('div', array('class' => 'nominatim-credits'));
 
-        // Attributions specific to $this->host
-        if ($this->credits) {
-            $action->raw($this->credits);
-        }
+        // Nominatim service license
+        $action->raw($this->credits);
 
-        // Attributions to OSM (they should be there regardless of $this->host
-        // TODO: TRANS
+        // OSM license (ODbL)
         $action->raw('<p>OpenStreetMap data is licensed under the <a href="http://opendatacommons.org/licenses/odbl/">Open Data Commons Open Database License (ODbL).</a></p>');
         $action->elementEnd('div');
     }
@@ -44,15 +53,19 @@ class NominatimPlugin extends Plugin
      * convert a name into a Location object
      *
      * @param string   $name      Name to convert
-     * @param string   $language  ISO code for anguage the name is in
+     * @param string   $language  ISO code for language the name is in
      * @param Location &$location Location object (may be null)
      *
      * @return boolean whether to continue (results in $location)
      */
     function onLocationFromName($name, $language, &$location)
     {
-        $loc = $this->getCache(array('name' => $name,
-                                     'language' => $language));
+        $params = array(
+            'name' => $name,
+            'language' => $language
+        );
+
+        $loc = $this->getCache($params);
 
         if ($loc !== false) {
             $location = $loc;
@@ -66,19 +79,15 @@ class NominatimPlugin extends Plugin
                                                  'accept-language' => $language,
                                                  'format' => 'xml'));
         } catch (Exception $e) {
-            // $this->log(LOG_WARNING, "Error for $name: " . $e->getMessage());
+            $this->log(LOG_DEBUG, "Error for $name: " . $e->getMessage());
             return true;
         }
 
-        if (count($geonames) == 0) {
-            // no results
-            $this->setCache(array('name' => $name,
-                                  'language' => $language),
-                            null);
+        // no results
+        if (count($geonames) === 0) {
+            $this->setCache($params, null);
             return true;
         }
-
-        $parts = $this->getAddressParts($geonames->place);
 
         $location = new Location();
 
@@ -88,15 +97,11 @@ class NominatimPlugin extends Plugin
         $location->lon         = $this->canonical((string)$geonames->place->attributes()['lon']);
         $location->names[$language] = (string)$geonames->place['display_name'];
 
-        $this->setCache(array('name' => $name,
-                              'language' => $language),
-                        $location);
+        $this->setCache($params, $location);
 
-        // handled, don't continue processing!
         return false;
     }
 
-    // TODO
     /**
      * convert an id into a Location object
      *
@@ -123,10 +128,10 @@ class NominatimPlugin extends Plugin
 
         try {
             $geonames = $this->getGeonames('reverse',
-                                           array('osm_type' => 'N',
+                                           array('osm_type' => 'N', // FIXME: https://github.com/chimo/gs-nominatim/issues/5
                                                  'osm_id' => $id));
         } catch (Exception $e) {
-            // $this->log(LOG_WARNING, "Error for ID $id: " . $e->getMessage());
+            $this->log(LOG_DEBUG, "Error for ID $id: " . $e->getMessage());
             return false;
         }
 
@@ -149,6 +154,10 @@ class NominatimPlugin extends Plugin
         return false;
     }
 
+    /**
+     * Return an array of address parts we're interested in
+     * (town, city, state, country...)
+     */
     function getAddressParts($n) {
         $parts = array();
 
@@ -204,7 +213,7 @@ class NominatimPlugin extends Plugin
                                                'lon' => $lon,
                                                'accept-language' => $language));
         } catch (Exception $e) {
-            // $this->log(LOG_WARNING, "Error for coords $lat, $lon: " . $e->getMessage());
+            $this->log(LOG_DEBUG, "Error for coords $lat, $lon: " . $e->getMessage());
             return true;
         }
 
@@ -234,77 +243,6 @@ class NominatimPlugin extends Plugin
         return false;
     }
 
-    // TODO
-    /**
-     * Human-readable name for a location
-     *
-     * Given a location, we try to retrieve a human-readable name
-     * in the target language.
-     *
-     * @param Location $location Location to get the name for
-     * @param string   $language ISO code for language to find name in
-     * @param string   &$name    Place to put the name
-     *
-     * @return boolean whether to continue
-     */
-    /* function onLocationNameLanguage($location, $language, &$name)
-    {
-        if ($location->location_ns != self::LOCATION_NS) {
-            // It's not one of our IDs... keep processing
-            return true;
-        }
-
-        $id = $location->location_id;
-
-        $n = $this->getCache(array('id' => $id,
-                                   'language' => $language));
-
-        if ($n !== false) {
-            $name = $n;
-            return false;
-        }
-
-        try {
-            $geonames = $this->getGeonames('hierarchy',
-                                           array('geonameId' => $id,
-                                                 'accept-language' => $language));
-        } catch (Exception $e) {
-            $this->log(LOG_WARNING, "Error for ID $id: " . $e->getMessage());
-            return false;
-        }
-
-        if (count($geonames) == 0) {
-            $this->setCache(array('id' => $id,
-                                  'language' => $language),
-                            null);
-            return false;
-        }
-
-        $parts = array();
-
-        foreach ($geonames as $level) {
-            if (in_array($level->fcode, array('PCLI', 'ADM1', 'PPL'))) {
-                $parts[] = (string)$level->name;
-            }
-        }
-
-        $last = $geonames[count($geonames)-1];
-
-        if (!in_array($level->fcode, array('PCLI', 'ADM1', 'PPL'))) {
-            $parts[] = (string)$last->name;
-        }
-
-        if (count($parts)) {
-            $name = implode(', ', array_reverse($parts));
-            $this->setCache(array('id' => $id,
-                                  'language' => $language),
-                            $name);
-        }
-
-        return false;
-    } */
-
-    // TODO
     /**
      * Human-readable URL for a location
      *
@@ -351,6 +289,9 @@ class NominatimPlugin extends Plugin
         return false;
     }
 
+    /**
+     * Retrieve a location from cache
+     */
     function getCache($attrs)
     {
         $c = Cache::instance();
@@ -366,6 +307,9 @@ class NominatimPlugin extends Plugin
         return $value;
     }
 
+    /**
+     * Insert a location in cache
+     */
     function setCache($attrs, $loc)
     {
         $c = Cache::instance();
@@ -381,33 +325,31 @@ class NominatimPlugin extends Plugin
         return $result;
     }
 
+    /**
+     * Build cache key
+     */
     function cacheKey($attrs)
     {
-        $key = 'geonames:' .
+        $key = 'nominatim:' .
                implode(',', array_keys($attrs)) . ':'.
                Cache::keyize(implode(',', array_values($attrs)));
-        if ($this->cachePrefix) {
-            return $this->cachePrefix . ':' . $key;
-        } else {
-            return Cache::key($key);
-        }
+
+        return Cache::key($key);
     }
 
+    /**
+     * Build the URL to the nominatim service
+     */
     function nomUrl($method, $params)
     {
-        if (!empty($this->username)) {
-            $params['username'] = $this->username;
-        }
+        $query = http_build_query($params, null, '&');
 
-        if (!empty($this->token)) {
-            $params['token'] = $this->token;
-        }
-
-        $str = http_build_query($params, null, '&');
-
-        return 'http://'.$this->host.'/'.$method.'?'.$str;
+        return 'http://' . $this->host . '/' . $method . '?' . $query;
     }
 
+    /**
+     * Make requests to the nominatim service
+     */
     function getGeonames($method, $params)
     {
         if ($this->lastTimeout && (time() - $this->lastTimeout < $this->timeoutWindow)) {
@@ -431,7 +373,7 @@ class NominatimPlugin extends Plugin
         if (!$result->isOk()) {
             // TRANS: Exception thrown when a geo names service does not return an expected response.
             // TRANS: %s is an HTTP error code.
-            throw new Exception(sprintf(_m('HTTP error code %s.'),$result->getStatus()));
+            throw new Exception(sprintf(_m('HTTP error code %s.'), $result->getStatus()));
         }
 
         $body = $result->getBody();
@@ -452,21 +394,21 @@ class NominatimPlugin extends Plugin
         }
 
         if (isset($document->error)) {
-            // TRANS: Exception thrown when a geo names service return a specific error number and error text.
-            // TRANS: %1$s is an error code, %2$s is an error message.
-            throw new Exception(sprintf(_m('Something went wrong'))); // TODO: Better message
+            throw new Exception("Location service returned an error: " . $document->error);
         }
 
-        // Array of elements, >0 elements
         return $document;
     }
 
+    /**
+     * Plugin info (appears on /main/version page)
+     */
     function onPluginVersion(&$versions)
     {
         $versions[] = array('name' => 'Nominatim',
                             'version' => self::VERSION,
                             'author' => 'Stephane Berube',
-                            'homepage' => 'https://github.com/chimo/SN-Nominatim',
+                            'homepage' => 'https://github.com/chimo/gs-nominatim',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Uses <a href="http://nominatim.openstreetmap.org/">Nominatim</a> service to get human-readable '.
@@ -474,6 +416,9 @@ class NominatimPlugin extends Plugin
         return true;
     }
 
+    /**
+     * Remove trailing zeroes, and then trailing periods from a lat or lon
+     */
     function canonical($coord)
     {
         $coord = rtrim($coord, "0");
