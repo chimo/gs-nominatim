@@ -29,6 +29,7 @@ class NominatimPlugin extends Plugin
      */
     function initialize()
     {
+        $this->key = common_config('nominatim', 'key');
         $this->host = common_config('nominatim', 'host') ?: 'open.mapquestapi.com/nominatim/v1';
         $this->credits = common_config('nominatim', 'credits') ?: '<p>Nominatim Search Courtesy of <a href="http://www.mapquest.com/">MapQuest</a></p>';
     }
@@ -129,7 +130,8 @@ class NominatimPlugin extends Plugin
         try {
             $geonames = $this->getGeonames('reverse',
                                            array('osm_type' => 'N', // FIXME: https://github.com/chimo/gs-nominatim/issues/5
-                                                 'osm_id' => $id));
+                                                 'osm_id' => $id,
+                                                 'key' => $this->key));
         } catch (Exception $e) {
             $this->log(LOG_DEBUG, "Error for ID $id: " . $e->getMessage());
             return false;
@@ -211,6 +213,7 @@ class NominatimPlugin extends Plugin
           $geonames = $this->getGeonames('reverse',
                                          array('lat' => $lat,
                                                'lon' => $lon,
+                                               'key' => $this->key,
                                                'accept-language' => $language));
         } catch (Exception $e) {
             $this->log(LOG_DEBUG, "Error for coords $lat, $lon: " . $e->getMessage());
