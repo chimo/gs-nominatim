@@ -406,7 +406,7 @@ class NominatimPlugin extends Plugin
     /**
      * Plugin info (appears on /main/version page)
      */
-    function onPluginVersion(&$versions)
+    function onPluginVersion(array &$versions)
     {
         $versions[] = array('name' => 'Nominatim',
                             'version' => self::VERSION,
